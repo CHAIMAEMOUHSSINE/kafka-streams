@@ -1,4 +1,4 @@
 package net.chaimae.kafkaspringcloudstream.events;
 
-public class PageEvent {
+public record PageEvent(String page, String user, long timestamp) {
 }
