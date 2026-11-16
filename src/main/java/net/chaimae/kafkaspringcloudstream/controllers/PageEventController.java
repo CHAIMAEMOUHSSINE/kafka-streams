@@ -1,12 +1,19 @@
 package net.chaimae.kafkaspringcloudstream.controllers;
 
 import net.chaimae.kafkaspringcloudstream.events.PageEvent;
+import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.ReadOnlyWindowStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.binder.kafka.streams.InteractiveQueryService;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+import org.apache.kafka.streams.state.QueryableStoreTypes;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -35,7 +42,7 @@ public class PageEventController {
         return Flux.interval(Duration.ofSeconds(1))
                 .map(sequence->{
                     Map<String,Long> stringLongMap=new HashMap<>();
-                    ReadOnlyWindowStore<String, Long> windowStore = interactiveQueryService.getQueryableStore("count-store", QueryableStoreTypes.windowStore());
+                    org.apache.kafka.streams.state.ReadOnlyWindowStore<String, Long> windowStore = interactiveQueryService.getQueryableStore("count-store", QueryableStoreTypes.windowStore());
                     Instant now=Instant.now();
                     Instant from=now.minusMillis(5000);
                     KeyValueIterator<Windowed<String>, Long> fetchAll = windowStore.fetchAll(from, now);
