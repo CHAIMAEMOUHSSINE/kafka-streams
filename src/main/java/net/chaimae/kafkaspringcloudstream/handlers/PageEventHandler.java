@@ -42,8 +42,8 @@ public class PageEventHandler {
     public Function<KStream<String, PageEvent>, KStream<String, Long>> kStream(){
         return (stream)->
                 stream
-                        .filter((k,v)->v.duration()>100)
-                        .map((k,v)->new KeyValue<>(v.name(), v.duration()))
+                        .filter((k,v)->v.timestamp()>100)
+                        .map((k,v)->new KeyValue<>(v.page(), v.timestamp()))
                         .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                         .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofSeconds(5)))
                         .count(Materialized.as("count-store"))
