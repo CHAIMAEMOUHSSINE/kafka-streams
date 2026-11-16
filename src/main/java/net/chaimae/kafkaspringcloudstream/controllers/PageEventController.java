@@ -37,24 +37,64 @@ public class PageEventController {
         return event;
     }
 
-    @GetMapping(path = "/analytics",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<Map<String, Long>> analytics(){
+
+    @GetMapping(
+            path = "/analytics",
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE
+    )
+    public Flux<Map<String, Long>> analytics() {
+
         return Flux.interval(Duration.ofSeconds(1))
-                .map(sequence->{
-                    Map<String,Long> stringLongMap=new HashMap<>();
-                    org.apache.kafka.streams.state.ReadOnlyWindowStore<String, Long> windowStore = interactiveQueryService.getQueryableStore("count-store", QueryableStoreTypes.windowStore());
-                    Instant now=Instant.now();
-                    Instant from=now.minusMillis(5000);
-                    KeyValueIterator<Windowed<String>, Long> fetchAll = windowStore.fetchAll(from, now);
-                    //WindowStoreIterator<Long> fetchAll = windowStore.fetch(page, from, now);
-                    while (fetchAll.hasNext()){
-                        KeyValue<Windowed<String>, Long> next = fetchAll.next();
-                        stringLongMap.put(next.key.key(),next.value);
+                .map(sequence -> {
+
+                    Map<String, Long> result = new HashMap<>();
+
+                    // Default values for the graph
+                    result.put("P1", 0L);
+                    result.put("P2", 0L);
+
+                    try {
+                        ReadOnlyWindowStore<String, Long> windowStore =
+                                interactiveQueryService.getQueryableStore(
+                                        "count-store",
+                                        QueryableStoreTypes.windowStore()
+                                );
+
+                        Instant now = Instant.now();
+
+                        // Query a slightly wider range
+                        Instant from = now.minusSeconds(15);
+
+                        try (KeyValueIterator<Windowed<String>, Long> iterator =
+                                     windowStore.fetchAll(from, now)) {
+
+                            while (iterator.hasNext()) {
+
+                                KeyValue<Windowed<String>, Long> entry =
+                                        iterator.next();
+
+                                String page = entry.key.key();
+
+                                // Keep the latest window per page
+                                if (page.equals("P1") || page.equals("P2")) {
+                                    result.put(page, entry.value);
+                                }
+                            }
+                        }
+
+                        System.out.println("Analytics: " + result);
+
+                    } catch (Exception e) {
+                        System.err.println(
+                                "Analytics store unavailable: " + e.getMessage()
+                        );
                     }
-                    return stringLongMap;
+
+                    return result;
                 });
     }
 
-
-
 }
+
+
+
